@@ -5,6 +5,9 @@ on:
     - cron: '0 17 * * *'  # UTC 17:00 = 北京时间凌晨 01:00
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
