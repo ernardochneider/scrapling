@@ -2,7 +2,7 @@ name: Jable Daily Scraper
 
 on:
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '0 17 * * *'  # UTC 17:00 = 北京时间凌晨 01:00
   workflow_dispatch:
 
 jobs:
@@ -19,7 +19,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install "scrapling[all]" psycopg2-binary
+        run: |
+          pip install "scrapling[all]" psycopg2-binary
+          python -m scrapling install
 
       - name: Run scraper
         env:
@@ -28,9 +30,9 @@ jobs:
 
       - name: Keep workflow alive
         run: |
-            echo "Last run: $(date '+%Y-%m-%d %H:%M:%S')" > last_run.txt
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add last_run.txt
-            git commit -m "chore: update last run timestamp [skip ci]"
-            git push
+          echo "Last run: $(date '+%Y-%m-%d %H:%M:%S')" > last_run.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last_run.txt
+          git commit -m "chore: update last run timestamp [skip ci]"
+          git push

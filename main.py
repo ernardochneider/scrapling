@@ -1,4 +1,4 @@
-from scrapling.fetchers import Fetcher
+from scrapling import StealthyFetcher
 import re
 import os
 import psycopg2
@@ -110,7 +110,7 @@ def save_videos_to_db(conn, videos):
 def extract_hls_url(video_url):
     """从视频页面提取HLS链接"""
     try:
-        page = Fetcher.get(video_url)
+        page = StealthyFetcher.fetch(video_url)
         html_content = page.html_content
 
         hls_patterns = [
@@ -132,14 +132,14 @@ def extract_hls_url(video_url):
 
 
 def scrape_jable_videos():
-    """抓取Jable热门视频"""
-    print(f"开始抓取 Jable.tv 热门视频...")
+    """抓取Jable热门视频（全量）"""
+    print("开始抓取 Jable.tv 热门视频...")
 
-    page = Fetcher.get('https://jable.tv/hot/')
+    page = StealthyFetcher.fetch('https://jable.tv/hot/')
     video_boxes = page.css('.video-img-box')
 
     total_videos = len(video_boxes)
-    print(f"找到 {len(video_boxes)} 个视频")
+    print(f"找到 {total_videos} 个视频，全部处理")
 
     videos = []
 
@@ -149,19 +149,16 @@ def scrape_jable_videos():
         video_info = {}
         video_info['rank'] = idx
 
-        # 提取基本信息
         title_elem = detail.css('.title a')
         if title_elem:
             video_info['title'] = title_elem[0].text.strip()
             video_info['url'] = title_elem[0].attrib.get('href', '')
 
-        # 提取视频ID
         if video_info.get('url'):
             match = re.search(r'/videos/([^/]+)/', video_info['url'])
             if match:
                 video_info['video_id'] = match.group(1)
 
-        # 提取统计数据
         sub_title = detail.css('.sub-title')
         if sub_title:
             sub_html = sub_title[0].html_content
@@ -176,23 +173,19 @@ def scrape_jable_videos():
                     video_info['views'] = 0
                     video_info['likes'] = 0
 
-        # 提取时长
         duration_elem = detail.css('.label')
         if duration_elem:
             video_info['duration'] = duration_elem[0].text.strip()
 
-        # 提取缩略图
         img_elem = detail.css('img.lazyload')
         if img_elem:
             video_info['thumbnail'] = img_elem[0].attrib.get('data-src', '')
             video_info['preview'] = img_elem[0].attrib.get('data-preview', '')
 
-        # 提取数字ID
         fav_elem = detail.css('[data-fav-video-id]')
         if fav_elem:
             video_info['video_id_num'] = fav_elem[0].attrib.get('data-fav-video-id', '')
 
-        # 提取HLS链接
         if video_info.get('url'):
             hls_url = extract_hls_url(video_info['url'])
             if hls_url:
@@ -200,7 +193,6 @@ def scrape_jable_videos():
             else:
                 print(f"  警告: 未找到HLS链接")
 
-        # 添加时间戳
         video_info['scraped_at'] = datetime.now().isoformat()
         video_info['scraped_date'] = date.today().isoformat()
 
@@ -213,7 +205,6 @@ def scrape_jable_videos():
 
 
 def main():
-
     conn = None
     try:
         conn = get_db_connection()
@@ -242,7 +233,7 @@ def main():
         sys.exit(1)
 
     finally:
-        if conn and not isinstance(conn, str):
+        if conn:
             conn.close()
             print("数据库连接已关闭")
 
