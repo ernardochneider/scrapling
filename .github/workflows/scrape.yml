@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install "scrapling[all]" psycopg2-binary
-          python -m scrapling install
+          playwright install chromium
 
       - name: Run scraper
         env:
